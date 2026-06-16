@@ -126,7 +126,7 @@ def test_install_and_uninstall_are_idempotent(tmp_path: Path) -> None:
     assert (home / ".claude" / "skills" / "quiet-pytest" / "SKILL.md").exists()
 
     for _ in range(2):
-        result = run_command(["bash", str(ROOT / "uninstall.sh")], cwd=ROOT, env=env)
+        result = run_command(["bash", str(ROOT / "install.sh"), "--uninstall"], cwd=ROOT, env=env)
         assert result.returncode == 0, result.stdout
 
     assert not installed_command.exists()

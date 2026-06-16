@@ -6,23 +6,9 @@ REFERENCE="@quiet-pytest.md"
 
 usage() {
     cat <<'USAGE'
-Usage: install.sh [options]
+Usage: install.sh [--uninstall]
 
-Install Quiet Pytest globally for the current user and configure Codex/Claude.
-
-Options:
-  --prefix DIR           Install command under DIR/bin (default: ~/.local)
-  --bin-dir DIR          Install command in DIR instead of PREFIX/bin
-  --system               Install command in /usr/local/bin
-  --no-agent-config      Do not update ~/.codex/AGENTS.md or ~/.claude/CLAUDE.md
-  --no-skills            Do not install Codex/Claude skill directories
-  -h, --help             Show this help
-
-Environment:
-  QUIET_PYTEST_HOME      Home directory whose agent config should be updated
-  CLAUDE_HOME            Claude config directory (default: $HOME/.claude)
-  CODEX_HOME             Codex config directory (default: $HOME/.codex)
-  PREFIX                 Install prefix (default: ~/.local)
+Installs quiet-pytest to ~/.local/bin and configures Codex/Claude.
 USAGE
 }
 
@@ -42,37 +28,16 @@ target_home() {
 
 TARGET_HOME="$(target_home)"
 PREFIX="${PREFIX:-$TARGET_HOME/.local}"
-BIN_DIR="${QUIET_PYTEST_BIN_DIR:-$PREFIX/bin}"
-SHARE_DIR="${QUIET_PYTEST_SHARE_DIR:-$PREFIX/share/quiet-pytest}"
+BIN_DIR="$PREFIX/bin"
+SHARE_DIR="$PREFIX/share/quiet-pytest"
 CLAUDE_HOME="${CLAUDE_HOME:-$TARGET_HOME/.claude}"
 CODEX_HOME="${CODEX_HOME:-$TARGET_HOME/.codex}"
-CONFIG_AGENTS="${QUIET_PYTEST_CONFIG_AGENTS:-1}"
-INSTALL_SKILLS="${QUIET_PYTEST_INSTALL_SKILLS:-1}"
+UNINSTALL=0
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
-        --prefix)
-            PREFIX="${2:?--prefix requires a directory}"
-            BIN_DIR="${QUIET_PYTEST_BIN_DIR:-$PREFIX/bin}"
-            SHARE_DIR="${QUIET_PYTEST_SHARE_DIR:-$PREFIX/share/quiet-pytest}"
-            shift 2
-            ;;
-        --bin-dir)
-            BIN_DIR="${2:?--bin-dir requires a directory}"
-            shift 2
-            ;;
-        --system)
-            PREFIX="/usr/local"
-            BIN_DIR="${QUIET_PYTEST_BIN_DIR:-/usr/local/bin}"
-            SHARE_DIR="${QUIET_PYTEST_SHARE_DIR:-/usr/local/share/quiet-pytest}"
-            shift
-            ;;
-        --no-agent-config)
-            CONFIG_AGENTS=0
-            shift
-            ;;
-        --no-skills)
-            INSTALL_SKILLS=0
+        --uninstall)
+            UNINSTALL=1
             shift
             ;;
         -h|--help)
@@ -86,6 +51,48 @@ while [ "$#" -gt 0 ]; do
             ;;
     esac
 done
+
+remove_reference() {
+    local file="$1"
+    local tmp
+
+    [ -f "$file" ] || return 0
+    tmp="$(mktemp)"
+    grep -Fxv "$REFERENCE" "$file" > "$tmp" || true
+    cat "$tmp" > "$file"
+    rm -f "$tmp"
+}
+
+remove_command() {
+    local path="$1"
+
+    [ -e "$path" ] || return 0
+
+    if [ -L "$path" ]; then
+        rm -f "$path"
+        return
+    fi
+
+    if [ -f "$path" ] \
+        && grep -q 'Run a test command; print only the summary line' "$path" \
+        && grep -q 'pytest_cov' "$path"; then
+        rm -f "$path"
+        return
+    fi
+
+    printf 'Skipped %s because it does not look like Quiet Pytest.\n' "$path" >&2
+}
+
+if [ "$UNINSTALL" = "1" ]; then
+    remove_command "$BIN_DIR/quiet-pytest"
+    rm -rf "$SHARE_DIR"
+    remove_reference "$CLAUDE_HOME/CLAUDE.md"
+    remove_reference "$CODEX_HOME/AGENTS.md"
+    rm -f "$CLAUDE_HOME/quiet-pytest.md" "$CODEX_HOME/quiet-pytest.md"
+    rm -rf "$CODEX_HOME/skills/quiet-pytest" "$CLAUDE_HOME/skills/quiet-pytest"
+    printf 'Quiet Pytest uninstalled.\n'
+    exit 0
+fi
 
 SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
 SCRIPT_DIR=""
@@ -151,26 +158,20 @@ install -d "$BIN_DIR" "$SHARE_DIR"
 install -m 755 "$tmp_dir/quiet-pytest" "$BIN_DIR/quiet-pytest"
 install -m 644 "$tmp_dir/quiet-pytest.md" "$SHARE_DIR/quiet-pytest.md"
 
-if [ "$CONFIG_AGENTS" = "1" ]; then
-    install -d "$CLAUDE_HOME" "$CODEX_HOME"
-    install -m 644 "$tmp_dir/quiet-pytest.md" "$CLAUDE_HOME/quiet-pytest.md"
-    install -m 644 "$tmp_dir/quiet-pytest.md" "$CODEX_HOME/quiet-pytest.md"
-    add_reference "$CLAUDE_HOME/CLAUDE.md"
-    add_reference "$CODEX_HOME/AGENTS.md"
-fi
-
-if [ "$INSTALL_SKILLS" = "1" ]; then
-    install_skill "$CODEX_HOME/skills/quiet-pytest" "$tmp_dir"
-    install_skill "$CLAUDE_HOME/skills/quiet-pytest" "$tmp_dir"
-fi
+install -d "$CLAUDE_HOME" "$CODEX_HOME"
+install -m 644 "$tmp_dir/quiet-pytest.md" "$CLAUDE_HOME/quiet-pytest.md"
+install -m 644 "$tmp_dir/quiet-pytest.md" "$CODEX_HOME/quiet-pytest.md"
+add_reference "$CLAUDE_HOME/CLAUDE.md"
+add_reference "$CODEX_HOME/AGENTS.md"
+install_skill "$CODEX_HOME/skills/quiet-pytest" "$tmp_dir"
+install_skill "$CLAUDE_HOME/skills/quiet-pytest" "$tmp_dir"
 
 cat <<EOF
 Quiet Pytest installed.
 
   Command:       $BIN_DIR/quiet-pytest
   Instructions:  $SHARE_DIR/quiet-pytest.md
-  Claude ref:    $CLAUDE_HOME/CLAUDE.md -> $REFERENCE
-  Codex ref:     $CODEX_HOME/AGENTS.md -> $REFERENCE
+  Agent ref:     $REFERENCE
 
 Restart Codex or Claude Code so they reload global instructions.
 EOF
