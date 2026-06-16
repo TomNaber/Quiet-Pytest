@@ -8,11 +8,25 @@ Minimal pytest output for coding agents.
 
 ## Install
 
+All agents:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TomNaber/Quiet-Pytest/main/install.sh | bash
 ```
 
-Installs `quiet-pytest`, `quiet-pytest.md`, and `@quiet-pytest.md` references for Codex and Claude Code. Restart the agent after installing.
+Claude only:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/TomNaber/Quiet-Pytest/main/install.sh | bash -s -- --claude
+```
+
+Codex only:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/TomNaber/Quiet-Pytest/main/install.sh | bash -s -- --codex
+```
+
+Installs `quiet-pytest`, `quiet-pytest.md`, and `@quiet-pytest.md` agent references. Restart the agent after installing.
 
 ## Usage
 
@@ -34,9 +48,9 @@ Quiet Pytest follows the same idea as RTK command filters: only send information
 | Repository | Tests | Raw pytest | Quiet Pytest | Savings |
 | --- | ---: | ---: | ---: | ---: |
 | Quiet Pytest | 4 | 15 tokens | 9 tokens | 40.0% |
-| Candela | 303 | 44 tokens | 9 tokens | 79.5% |
+| Candela (coverage) | 303 | 3,416 tokens | 15 tokens | 99.6% |
 
-Candela is a real Python GUI/tooling repo measured with `pytest -q --tb=short --no-cov`. A 300-test passing run is roughly the same size: about 44 tokens raw, 9 tokens quiet, 35 tokens saved each run.
+Candela is a real Python GUI/tooling repo measured from `pytest -q --tb=short` with its default coverage report enabled. A 300-test passing run is roughly the same size: about 3,416 tokens raw, 15 tokens quiet, 3,401 tokens saved each run.
 
 ## How It Works
 
@@ -52,10 +66,4 @@ It uses `python3` when no local venv exists and adds `--no-cov` automatically fo
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TomNaber/Quiet-Pytest/main/install.sh | bash -s -- --uninstall
-```
-
-## Development
-
-```bash
-uv run --no-project --with pytest python -m pytest tests
 ```

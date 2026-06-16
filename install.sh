@@ -6,7 +6,7 @@ REFERENCE="@quiet-pytest.md"
 
 usage() {
     cat <<'USAGE'
-Usage: install.sh [--uninstall]
+Usage: install.sh [--claude|--codex|--uninstall]
 
 Installs quiet-pytest to ~/.local/bin and configures Codex/Claude.
 USAGE
@@ -33,9 +33,21 @@ SHARE_DIR="$PREFIX/share/quiet-pytest"
 CLAUDE_HOME="${CLAUDE_HOME:-$TARGET_HOME/.claude}"
 CODEX_HOME="${CODEX_HOME:-$TARGET_HOME/.codex}"
 UNINSTALL=0
+INSTALL_CLAUDE=1
+INSTALL_CODEX=1
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
+        --claude)
+            INSTALL_CLAUDE=1
+            INSTALL_CODEX=0
+            shift
+            ;;
+        --codex)
+            INSTALL_CLAUDE=0
+            INSTALL_CODEX=1
+            shift
+            ;;
         --uninstall)
             UNINSTALL=1
             shift
@@ -158,19 +170,33 @@ install -d "$BIN_DIR" "$SHARE_DIR"
 install -m 755 "$tmp_dir/quiet-pytest" "$BIN_DIR/quiet-pytest"
 install -m 644 "$tmp_dir/quiet-pytest.md" "$SHARE_DIR/quiet-pytest.md"
 
-install -d "$CLAUDE_HOME" "$CODEX_HOME"
-install -m 644 "$tmp_dir/quiet-pytest.md" "$CLAUDE_HOME/quiet-pytest.md"
-install -m 644 "$tmp_dir/quiet-pytest.md" "$CODEX_HOME/quiet-pytest.md"
-add_reference "$CLAUDE_HOME/CLAUDE.md"
-add_reference "$CODEX_HOME/AGENTS.md"
-install_skill "$CODEX_HOME/skills/quiet-pytest" "$tmp_dir"
-install_skill "$CLAUDE_HOME/skills/quiet-pytest" "$tmp_dir"
+agents=""
+if [ "$INSTALL_CLAUDE" = "1" ]; then
+    install -d "$CLAUDE_HOME"
+    install -m 644 "$tmp_dir/quiet-pytest.md" "$CLAUDE_HOME/quiet-pytest.md"
+    add_reference "$CLAUDE_HOME/CLAUDE.md"
+    install_skill "$CLAUDE_HOME/skills/quiet-pytest" "$tmp_dir"
+    agents="Claude"
+fi
+
+if [ "$INSTALL_CODEX" = "1" ]; then
+    install -d "$CODEX_HOME"
+    install -m 644 "$tmp_dir/quiet-pytest.md" "$CODEX_HOME/quiet-pytest.md"
+    add_reference "$CODEX_HOME/AGENTS.md"
+    install_skill "$CODEX_HOME/skills/quiet-pytest" "$tmp_dir"
+    if [ -n "$agents" ]; then
+        agents="$agents, Codex"
+    else
+        agents="Codex"
+    fi
+fi
 
 cat <<EOF
 Quiet Pytest installed.
 
   Command:       $BIN_DIR/quiet-pytest
   Instructions:  $SHARE_DIR/quiet-pytest.md
+  Agents:        $agents
   Agent ref:     $REFERENCE
 
 Restart Codex or Claude Code so they reload global instructions.

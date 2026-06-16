@@ -126,7 +126,11 @@ def test_install_and_uninstall_are_idempotent(tmp_path: Path) -> None:
     assert (home / ".claude" / "skills" / "quiet-pytest" / "SKILL.md").exists()
 
     for _ in range(2):
-        result = run_command(["bash", str(ROOT / "install.sh"), "--uninstall"], cwd=ROOT, env=env)
+        result = run_command(
+            ["bash", str(ROOT / "install.sh"), "--uninstall"],
+            cwd=ROOT,
+            env=env,
+        )
         assert result.returncode == 0, result.stdout
 
     assert not installed_command.exists()
@@ -134,3 +138,29 @@ def test_install_and_uninstall_are_idempotent(tmp_path: Path) -> None:
     assert "@quiet-pytest.md" not in claude_md.read_text(encoding="utf-8")
     assert not (home / ".codex" / "quiet-pytest.md").exists()
     assert not (home / ".claude" / "quiet-pytest.md").exists()
+
+
+def test_agent_specific_installs_only_configure_requested_agent(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    env = os.environ.copy()
+    env.update(
+        {
+            "HOME": str(home),
+            "QUIET_PYTEST_HOME": str(home),
+            "PREFIX": str(tmp_path / "prefix"),
+            "PATH": os.environ.get("PATH", ""),
+        }
+    )
+
+    result = run_command(["bash", str(ROOT / "install.sh"), "--codex"], cwd=ROOT, env=env)
+    assert result.returncode == 0, result.stdout
+    assert (home / ".codex" / "AGENTS.md").exists()
+    assert not (home / ".claude" / "CLAUDE.md").exists()
+
+    result = run_command(["bash", str(ROOT / "install.sh"), "--uninstall"], cwd=ROOT, env=env)
+    assert result.returncode == 0, result.stdout
+
+    result = run_command(["bash", str(ROOT / "install.sh"), "--claude"], cwd=ROOT, env=env)
+    assert result.returncode == 0, result.stdout
+    assert (home / ".claude" / "CLAUDE.md").exists()
+    assert "@quiet-pytest.md" in (home / ".claude" / "CLAUDE.md").read_text(encoding="utf-8")
