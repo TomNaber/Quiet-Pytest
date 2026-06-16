@@ -4,7 +4,7 @@ Minimal pytest output for coding agents.
 
 > In development, tests passing is not an event deserving attention. Them failing is.
 
-`pytest -q` is not actually quiet: it still prints progress for each test item. Quiet Pytest prints one summary line when tests pass and full pytest output when tests fail.
+`pytest -q` is not actually quiet: it still prints progress for each test item, which adds up with tests in a single repo easily reaching triple digits and pytest calls being done almost after every prompt. Quiet Pytest prints one summary line when tests pass and full pytest output when tests fail.
 
 ## Install
 
@@ -47,13 +47,13 @@ Quiet Pytest follows the same idea as RTK command filters: only send information
 
 | Repository | Tests | Raw pytest | Quiet Pytest | Savings |
 | --- | ---: | ---: | ---: | ---: |
-| Candela (coverage) | 303 | 3,416 tokens | 15 tokens | 99.6% |
+| Representative Repo (coverage) | 303 | 3,416 tokens | 15 tokens | 99.6% |
 
-Candela is a real repository measured from `pytest -q --tb=short` with its default coverage report enabled. A 300-test passing run is roughly the same size: about 3,416 tokens raw, 15 tokens quiet, 3,401 tokens saved each run.
+The representative repo used is a real project with output tokens measured from `pytest -q --tb=short` with its default coverage report enabled. A 300-test passing run is about 3,416 tokens raw, 15 tokens quiet, so 3,401 tokens saved each run.
 
-In a representative Candela color-deviation session, Codex ran pytest 22 times: 11 focused runs and 11 full-suite runs. Based on the passing runs in that session, the measured savings were about 20,500 tokens: six full-suite coverage runs at about 3,401 tokens saved each, plus nine focused runs at about 7 tokens saved each.
+In a representative coding session, the AI ran pytest 15 times: 6 focused runs and 9 full-suite runs. Based on the runs in that session, the measured savings were about 20,500 tokens: six full-suite coverage runs at about ~3,400 tokens saved each, plus nine focused runs at about 7 tokens saved each.
 
-That session used about 911,000 active tokens, counting uncached input plus output. The pytest savings were about 2.3% of that active token load, saved consistently across normal development sessions without hiding failures.
+That session used about 911,000 active tokens, counting uncached input plus output. The pytest savings were about 2.3% of that active token load, saved consistently across normal development sessions. Expect a small but consistent saving for Python development.
 
 ## How It Works
 
