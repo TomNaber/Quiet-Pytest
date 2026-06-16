@@ -1,0 +1,11 @@
+[project]
+name = "quiet-pytest"
+version = "0.1.0"
+description = "A tiny pytest wrapper that keeps successful test runs quiet and failures complete."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Tom Naber" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

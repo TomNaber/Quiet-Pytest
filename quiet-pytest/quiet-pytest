@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Run a test command; print only the summary line on success, full output on failure.
+# With no args, runs the full pytest suite using ./.venv if present.
+if [ $# -eq 0 ]; then
+    if [ -x .venv/bin/python ]; then py=.venv/bin/python; else py=python3; fi
+    set -- "$py" -m pytest -q --tb=short
+    # Coverage tables are noise when debugging failures; skip when pytest-cov is present.
+    if "$py" -c 'import pytest_cov' 2>/dev/null; then set -- "$@" --no-cov; fi
+fi
+out="$("$@" 2>&1)"
+code=$?
+if [ "$code" -eq 0 ]; then
+    printf '%s\n' "$out" | tail -1
+else
+    printf '%s\n' "$out"
+fi
+exit "$code"

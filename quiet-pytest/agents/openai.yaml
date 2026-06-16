@@ -1,0 +1,4 @@
+interface:
+  display_name: "Quiet Pytest"
+  short_description: "Run pytest with concise success output"
+  default_prompt: "Use quiet-pytest to run the pytest suite quietly."
